@@ -1,9 +1,13 @@
 name: Mesclagem Automática dev → master
 
+permissions:
+  pull-requests: write
+  contents: write
+
 on:
   schedule:
     # Executa toda segunda-feira às 13:00 (1 PM)
-    - cron: "32 15 * * 1"
+    - cron: "40 15 * * 1"
   workflow_dispatch:  # Permite execução manual pelo GitHub Actions
 
 jobs:
@@ -16,12 +20,13 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # Etapa 2: Configurar informações do Git (usado caso o merge gere um commit)
       - name: Configurar Git
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "actions"
+          git config --global user.email "actions@openport.com.br"
 
       # Etapa 3: Autenticar com o GitHub CLI (gh)
       # Utiliza o GITHUB_TOKEN padrão fornecido pelo GitHub Actions.
