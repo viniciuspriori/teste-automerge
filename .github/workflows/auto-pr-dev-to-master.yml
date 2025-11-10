@@ -46,13 +46,23 @@ jobs:
           fi
 
       # Etapa 5: Mesclar automaticamente o Pull Request
-      - name: Mesclar Pull Request
+      - name: Mesclar Pull Request (Squash)
         run: |
           pr_number=$(gh pr list --head dev --base master --state open --json number --jq '.[0].number')
-          if [ -n "$pr_number" ]; then
-            echo "🔄 Mesclando PR #$pr_number..."
-            # Você pode trocar "--merge" por "--squash" ou "--rebase" se preferir outro tipo de merge
-            gh pr merge "$pr_number" --merge --auto --delete-branch
-          else
+
+          if [ -z "$pr_number" ]; then
             echo "⚠️ Nenhum PR encontrado para mesclar."
+            exit 0
           fi
+
+          echo "🔍 Verificando se há alterações em workflows..."
+          changed_files=$(gh pr view "$pr_number" --json files --jq '.files[].path' | grep '^.github/workflows/' || true)
+
+          if [ -n "$changed_files" ]; then
+            echo "🚫 PR contém alterações em workflows (.github/workflows/). Merge automático bloqueado por segurança."
+            exit 0
+          fi
+
+          echo "🔄 Mesclando PR #$pr_number com squash..."
+          gh pr merge "$pr_number" --squash --auto --delete-branch
+
