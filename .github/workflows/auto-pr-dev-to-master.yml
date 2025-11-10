@@ -3,7 +3,7 @@ name: Mesclagem Automática dev → master
 permissions:
   pull-requests: write
   contents: write
-  workflows: write
+  actions: write
   
 on:
   schedule:
