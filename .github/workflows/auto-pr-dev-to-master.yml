@@ -45,18 +45,7 @@ jobs:
             gh pr create --base master --head dev --title "Mesclagem Automática: dev → master" --body "Este PR foi criado automaticamente pelo GitHub Actions."
           fi
 
-      # Etapa 5: Aprovar automaticamente o Pull Request
-      - name: Aprovar Pull Request
-        run: |
-          pr_number=$(gh pr list --head dev --base master --state open --json number --jq '.[0].number')
-          if [ -n "$pr_number" ]; then
-            echo "🟢 Aprovando PR #$pr_number..."
-            gh pr review "$pr_number" --approve
-          else
-            echo "⚠️ Nenhum PR encontrado para aprovar."
-          fi
-
-      # Etapa 6: Mesclar automaticamente o Pull Request
+      # Etapa 5: Mesclar automaticamente o Pull Request
       - name: Mesclar Pull Request
         run: |
           pr_number=$(gh pr list --head dev --base master --state open --json number --jq '.[0].number')
