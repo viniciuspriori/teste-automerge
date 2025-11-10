@@ -8,7 +8,7 @@ permissions:
 on:
   schedule:
     # Executa toda segunda-feira às 13:00 (1 PM)
-    - cron: "*/30 * * * 1"
+    - cron: "0 */3 * * *"
   workflow_dispatch:  # Permite execução manual pelo GitHub Actions
 
 jobs:
@@ -39,6 +39,14 @@ jobs:
       # Utiliza o GITHUB_TOKEN padrão fornecido pelo GitHub Actions.
       - name: Autenticar no GitHub CLI
         run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
+
+      - name: Checa diferença entre branches
+        run: |
+          git fetch origin
+          if [ -z "$(git diff origin/master..origin/dev)" ]; then
+            echo "✅ Nenhuma diferença entre dev e master. Nada para mesclar."
+            exit 0
+          fi
 
       # Etapa 4: Verificar se já existe um PR aberto de dev → master.
       # Caso não exista, criar um novo automaticamente.
