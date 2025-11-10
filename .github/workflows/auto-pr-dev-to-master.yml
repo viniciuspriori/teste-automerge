@@ -7,7 +7,7 @@ permissions:
 on:
   schedule:
     # Executa toda segunda-feira às 13:00 (1 PM)
-    - cron: "05 16 * * 1"
+    - cron: "30 16 * * 1"
   workflow_dispatch:  # Permite execução manual pelo GitHub Actions
 
 jobs:
