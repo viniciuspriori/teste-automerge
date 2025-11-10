@@ -1,53 +1,64 @@
-name: Auto PR dev → master
+name: Mesclagem Automática dev → master
 
 on:
   schedule:
-    # Every Friday at 5 PM UTC-3 (adjust if needed)
-    - cron: '05 15 * * 1'   # 20:00 UTC = 17:00 Brazil time
-  workflow_dispatch:          # allows manual run if needed
-
-permissions:
-  contents: write
-  pull-requests: write
+    # Executa toda segunda-feira às 13:00 (1 PM)
+    - cron: "0 13 * * 1"
+  workflow_dispatch:  # Permite execução manual pelo GitHub Actions
 
 jobs:
-  create-pr:
+  auto-merge:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout master
+      # Etapa 1: Fazer checkout do repositório com histórico completo (necessário para o merge)
+      - name: Fazer checkout do repositório
         uses: actions/checkout@v4
         with:
-          ref: master
           fetch-depth: 0
 
-      - name: Fetch dev branch
-        run: git fetch origin dev:dev
+      # Etapa 2: Configurar informações do Git (usado caso o merge gere um commit)
+      - name: Configurar Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: master
-          head: dev
-          title: "Automated merge: dev → master"
-          body: |
-            This PR was automatically created by a scheduled workflow.
-            It merges the latest changes from **dev** into **master**.
-          labels: auto-merge
-          branch: auto-pr/dev-to-master
-          delete-branch: true
+      # Etapa 3: Autenticar com o GitHub CLI (gh)
+      # Utiliza o GITHUB_TOKEN padrão fornecido pelo GitHub Actions.
+      - name: Autenticar no GitHub CLI
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
-  auto-merge:
-    needs: create-pr
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-    steps:
-      - name: Auto-merge the created PR
-        uses: peter-evans/enable-pull-request-merge@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request: ${{ needs.create-pr.outputs.pull-request-number }}
-          merge-method: merge
+      # Etapa 4: Verificar se já existe um PR aberto de dev → master.
+      # Caso não exista, criar um novo automaticamente.
+      - name: Criar Pull Request de dev para master
+        run: |
+          # Verifica se já há um PR aberto de dev → master
+          if gh pr list --head dev --base master --state open --json number --jq '.[0].number' | grep -q '[0-9]'; then
+            echo "✅ Já existe um Pull Request aberto. Pulando criação."
+          else
+            echo "🚀 Criando novo Pull Request de dev para master..."
+            gh pr create --base master --head dev --title "Mesclagem Automática: dev → master" --body "Este PR foi criado automaticamente pelo GitHub Actions."
+          fi
+
+      # Etapa 5: Aprovar automaticamente o Pull Request
+      - name: Aprovar Pull Request
+        run: |
+          pr_number=$(gh pr list --head dev --base master --state open --json number --jq '.[0].number')
+          if [ -n "$pr_number" ]; then
+            echo "🟢 Aprovando PR #$pr_number..."
+            gh pr review "$pr_number" --approve
+          else
+            echo "⚠️ Nenhum PR encontrado para aprovar."
+          fi
+
+      # Etapa 6: Mesclar automaticamente o Pull Request
+      - name: Mesclar Pull Request
+        run: |
+          pr_number=$(gh pr list --head dev --base master --state open --json number --jq '.[0].number')
+          if [ -n "$pr_number" ]; then
+            echo "🔄 Mesclando PR #$pr_number..."
+            # Você pode trocar "--merge" por "--squash" ou "--rebase" se preferir outro tipo de merge
+            gh pr merge "$pr_number" --merge --auto --delete-branch
+          else
+            echo "⚠️ Nenhum PR encontrado para mesclar."
+          fi
