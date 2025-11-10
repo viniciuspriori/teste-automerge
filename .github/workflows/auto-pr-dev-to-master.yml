@@ -1,0 +1,53 @@
+name: Auto PR dev → master
+
+on:
+  schedule:
+    # Every Friday at 5 PM UTC-3 (adjust if needed)
+    - cron: '0 14 * * MON'   # 20:00 UTC = 17:00 Brazil time
+  workflow_dispatch:          # allows manual run if needed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  create-pr:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout master
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Fetch dev branch
+        run: git fetch origin dev:dev
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: master
+          head: dev
+          title: "Automated merge: dev → master"
+          body: |
+            This PR was automatically created by a scheduled workflow.
+            It merges the latest changes from **dev** into **master**.
+          labels: auto-merge
+          branch: auto-pr/dev-to-master
+          delete-branch: true
+
+  auto-merge:
+    needs: create-pr
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Auto-merge the created PR
+        uses: peter-evans/enable-pull-request-merge@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          pull-request: ${{ needs.create-pr.outputs.pull-request-number }}
+          merge-method: merge
