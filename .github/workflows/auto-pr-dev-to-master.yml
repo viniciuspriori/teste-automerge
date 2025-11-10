@@ -71,5 +71,5 @@ jobs:
           fi
 
           echo "🔄 Mesclando PR #$pr_number com squash..."
-          gh pr merge "$pr_number" --squash --auto
+          gh pr merge --admin "$pr_number" --squash
 
