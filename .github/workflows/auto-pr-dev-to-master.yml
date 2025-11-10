@@ -40,18 +40,23 @@ jobs:
       - name: Autenticar no GitHub CLI
         run: echo "${{ secrets.GITHUB_TOKEN }}" | gh auth login --with-token
 
+      # Checa diferença entre branches
       - name: Checa diferença entre branches
+        id: diff
         run: |
-         if [ -z "$(git log origin/master..origin/dev --oneline)" ]; then
+          git fetch origin master dev --depth=1
+          if [ -z "$(git log origin/master..origin/dev --oneline)" ]; then
             echo "✅ Nenhuma diferença entre dev e master. Nada para mesclar."
-            exit 0
-         else
+            echo "has_diff=false" >> $GITHUB_OUTPUT
+          else
             echo "🚀 Há mudanças novas em dev. Procedendo para a criação do PR."
-         fi
+            echo "has_diff=true" >> $GITHUB_OUTPUT
+          fi
 
       # Etapa 4: Verificar se já existe um PR aberto de dev → master.
       # Caso não exista, criar um novo automaticamente.
       - name: Criar Pull Request de dev para master
+        if: steps.diff.outputs.has_diff == 'true'
         run: |
           # Verifica se já há um PR aberto de dev → master
           if gh pr list --head dev --base master --state open --json number --jq '.[0].number' | grep -q '[0-9]'; then
@@ -63,6 +68,7 @@ jobs:
 
       # Etapa 5: Mesclar automaticamente o Pull Request
       - name: Mesclar Pull Request (Squash)
+        if: steps.diff.outputs.has_diff == 'true'
         run: |
           pr_number=$(gh pr list --head dev --base master --state open --json number --jq '.[0].number')
 
@@ -83,7 +89,7 @@ jobs:
           gh pr merge --admin "$pr_number" --squash
 
       - name: Resetar branch dev para master
-        if: success()
+        if: success() && steps.diff.outputs.has_diff == 'true'
         run: |
           echo "♻️ Resetando branch dev para ser igual à master..."
 
