@@ -42,11 +42,12 @@ jobs:
 
       - name: Checa diferença entre branches
         run: |
-          git fetch origin
-          if [ -z "$(git diff origin/master..origin/dev)" ]; then
+         if [ -z "$(git log origin/master..origin/dev --oneline)" ]; then
             echo "✅ Nenhuma diferença entre dev e master. Nada para mesclar."
             exit 0
-          fi
+         else
+            echo "🚀 Há mudanças novas em dev. Procedendo para a criação do PR."
+         fi
 
       # Etapa 4: Verificar se já existe um PR aberto de dev → master.
       # Caso não exista, criar um novo automaticamente.
