@@ -3,7 +3,8 @@ name: Mesclagem Automática dev → master
 permissions:
   pull-requests: write
   contents: write
-
+  workflows: write
+  
 on:
   schedule:
     # Executa toda segunda-feira às 13:00 (1 PM)
