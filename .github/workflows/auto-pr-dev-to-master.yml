@@ -73,3 +73,15 @@ jobs:
           echo "🔄 Mesclando PR #$pr_number com squash..."
           gh pr merge --admin "$pr_number" --squash
 
+      - name: Resetar branch dev para master
+        if: success()
+        run: |
+          echo "♻️ Resetando branch dev para ser igual à master..."
+
+          git fetch origin master
+
+          git checkout dev
+
+          git reset --hard origin/master
+
+          git push origin dev --force
